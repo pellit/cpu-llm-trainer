@@ -1,1 +1,22 @@
 
+version: '3.8'
+
+services:
+  # ... tu servicio de entrenamiento anterior (cpu-trainer) ...
+  
+  inference-ui:
+    build: .
+    container_name: llm_inference_ui
+    ports:
+      - "7861:7861" # Puerto nuevo para el chat
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      # Mapeamos el script que acabas de crear
+      - ./inference_app.py:/app/inference_app.py
+      # Mapeamos la carpeta donde se guardaron los entrenamientos
+      - ./saves:/app/LLaMA-Factory/saves
+    environment:
+      - CUDA_VISIBLE_DEVICES=-1
+      - OMP_NUM_THREADS=6
+    # Este comando instala gradio si falta y corre tu script
+    command: sh -c "pip install gradio && python /app/inference_app.py"
