@@ -14,6 +14,7 @@ services:
     environment:
       - CUDA_VISIBLE_DEVICES=-1
       - OMP_NUM_THREADS=4
+      - API_KEY=super-secreto-2025  # <--- CAMBIA ESTO
     deploy:
       resources:
         limits:
