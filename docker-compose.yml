@@ -5,7 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: llm_api_service
     ports:
       - "7861:7861"
     volumes:
