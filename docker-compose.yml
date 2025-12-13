@@ -15,7 +15,7 @@ services:
       - ./saves:/app/LLaMA-Factory/saves
     environment:
       - CUDA_VISIBLE_DEVICES=-1
-      - OMP_NUM_THREADS=6
+      - OMP_NUM_THREADS=4
     # Instalamos dependencias extras y corremos el script
     command: sh -c "pip install fastapi uvicorn gradio && python /app/api_app.py"
 
