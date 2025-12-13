@@ -1,6 +1,7 @@
 import uvicorn
 import torch
 import json
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
@@ -34,10 +35,9 @@ model.eval()
 def core_generate(message: str, role_instruction: str, context_json: Dict, history: list = []):
     """
     Función pura que toma los inputs y devuelve texto.
-    Se usa tanto por la API como por la UI.
     """
     
-    # Convertir el JSON a string para que el LLM lo lea
+    # Convertir el JSON a string formateado
     json_str = json.dumps(context_json, indent=2, ensure_ascii=False)
     
     # Construir el System Prompt Dinámico
@@ -47,22 +47,22 @@ def core_generate(message: str, role_instruction: str, context_json: Dict, histo
     CONTEXTO DE DATOS (JSON):
     {json_str}
     
-    Responde basándote en este contexto.
+    INSTRUCCIONES:
+    1. Responde basándote EXCLUSIVAMENTE en el contexto proporcionado arriba.
+    2. Si la respuesta no está en el JSON, di que no tienes esa información.
     """
     
     # Construir historial de mensajes
     messages = [{"role": "system", "content": full_system_prompt}]
     
-    # Añadir historia previa (si existe)
-    # Nota: para la API, history viene como lista de dicts. Para Gradio, requiere conversión.
-    if history and isinstance(history[0], list): # Formato Gradio antiguo [[u,b], [u,b]]
+    # Manejo de historial (API vs Gradio)
+    if history and isinstance(history[0], list): # Formato Gradio
         for u, b in history:
             messages.append({"role": "user", "content": u})
             messages.append({"role": "assistant", "content": b})
-    elif history and isinstance(history[0], dict): # Formato OpenAI/API
+    elif history and isinstance(history[0], dict): # Formato OpenAI
         messages.extend(history)
         
-    # Añadir mensaje actual
     messages.append({"role": "user", "content": message})
 
     # Tokenizar y Generar
@@ -72,8 +72,8 @@ def core_generate(message: str, role_instruction: str, context_json: Dict, histo
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=256,
-            temperature=0.4, # Bajo para ser fiel al JSON
+            max_new_tokens=512, # Aumentado para respuestas más completas
+            temperature=0.3,    # Bajo para reducir alucinaciones
             do_sample=True,
             top_p=0.9
         )
@@ -104,33 +104,5 @@ async def chat_endpoint(req: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- 4. DEFINICIÓN DE LA UI (Gradio) ---
-def gradio_wrapper(message, history, role_input, json_input_str):
-    try:
-        # Intentar parsear el JSON que escribe el usuario en la UI
-        json_data = json.loads(json_input_str) if json_input_str else {}
-    except:
-        json_data = {"error": "JSON inválido en la caja de texto"}
-        
-    return core_generate(message, role_input, json_data, history)
-
-with gr.Blocks() as ui:
-    gr.Markdown("## 🧪 Testeo de API LLM Local")
-    
-    with gr.Row():
-        with gr.Column(scale=1):
-            role_box = gr.Textbox(label="Rol / System Prompt", value="Eres un asistente experto en analizar estos datos.")
-            json_box = gr.Code(label="Contexto JSON", language="json", value='{\n "producto": "Laptop",\n "precio": 500\n}')
-        with gr.Column(scale=2):
-            chat_interface = gr.ChatInterface(
-                fn=gradio_wrapper,
-                additional_inputs=[role_box, json_box],
-                type="messages" 
-            )
-
-# Montar Gradio dentro de FastAPI en la ruta /ui
-app = gr.mount_gradio_app(app, ui, path="/ui")
-
-# --- 5. EJECUCIÓN ---
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=7861)
+# --- 4. DEFINICIÓN DE LA UI (Gradio Actualizado) ---
+def gradio_wrapper(message, history
