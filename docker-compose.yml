@@ -1,23 +1,23 @@
 version: '3.8'
 
 services:
-  inference-ui:
+  inference-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: llm_inference_ui
+    container_name: llm_api_service
     ports:
       - "7861:7861"
     volumes:
       - huggingface_cache:/root/.cache/huggingface
-      - ./inference_app.py:/app/inference_app.py
+      # Mapeamos el nuevo script
+      - ./api_app.py:/app/api_app.py
       - ./saves:/app/LLaMA-Factory/saves
-      # --- NUEVA LÍNEA: Mapear el JSON ---
-      - ./data.json:/app/data.json
     environment:
       - CUDA_VISIBLE_DEVICES=-1
       - OMP_NUM_THREADS=6
-    command: sh -c "pip install gradio && python /app/inference_app.py"
+    # Instalamos dependencias extras y corremos el script
+    command: sh -c "pip install fastapi uvicorn gradio && python /app/api_app.py"
 
 volumes:
   huggingface_cache:
