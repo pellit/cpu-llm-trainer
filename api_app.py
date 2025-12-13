@@ -18,7 +18,7 @@ print("⏳ Iniciando carga del modelo en CPU...")
 tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID)
 model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL_ID,
-    dtype=torch.float32,
+    dtype=torch.bfloat16,  # <--- ESTO OCUPA LA MITAD
     device_map="cpu",
     low_cpu_mem_usage=True
 )
