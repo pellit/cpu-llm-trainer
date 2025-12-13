@@ -104,3 +104,41 @@ Como usamos **FastAPI**, tienes una documentación interactiva generada automát
 2.  Entra a: **`http://<TU_IP>:7861/docs`**
 3.  Verás una interfaz azul (Swagger UI).
 4.  Busca el endpoint `/v1/chat`, dale a "Try it out", pega el JSON y ejecuta.
+
+### 6. Cómo conectarse ahora (Con seguridad)
+Ahora, si intentas usar el comando de antes, te dará error 403 Forbidden. Debes agregar el header X-API-Key.
+
+### 6.1 Ejemplo con Python (Script Cliente)
+#Python
+
+import requests
+
+API_URL = "http://localhost:7861/v1/chat"
+MY_KEY = "super-secreto-2025"  # La misma que pusiste en docker-compose
+
+payload = {
+    "message": "Hola, ¿qué dice el JSON?",
+    "data": {"info": "secreta"}
+}
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Key": MY_KEY  # <--- AQUÍ VA LA CLAVE
+}
+
+try:
+    response = requests.post(API_URL, json=payload, headers=headers)
+    if response.status_code == 200:
+        print(response.json())
+    else:
+        print("Error:", response.status_code, response.text)
+except Exception as e:
+    print("Error de conexión")
+    
+### 6.1.2 Ejemplo con cURL
+#Bash
+
+curl -X POST "http://localhost:7861/v1/chat" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: super-secreto-2025" \
+     -d '{"message": "Hola", "data": {}}'
