@@ -189,7 +189,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as ui:
     gr.Markdown("# 🧠 Chat Inteligente (RAG Vectorial)")
     with gr.Row():
         with gr.Column(scale=1):
-            role_box = gr.Textbox(label="Rol", value="Eres un analista experto.")
+            role_box = gr.Textbox(label="Rol", value="Eres un analista experto en futbol un pertfecto director tecnico y seleccionador de jugadores.")
             with gr.Tabs():
                 with gr.TabItem("📁 Archivo"): file_box = gr.File(label="JSON", file_types=[".json"], type="filepath")
                 with gr.TabItem("📝 Texto"): json_box = gr.Code(label="JSON", language="json", value='{}')
