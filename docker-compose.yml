@@ -2,7 +2,6 @@ version: '3.8'
 
 services:
   inference-ui:
-    # 'context: .' significa que busca el Dockerfile en la misma carpeta que este archivo
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,17 +9,15 @@ services:
     ports:
       - "7861:7861"
     volumes:
-      # CORRECCIÓN 1: Usamos un volumen nombrado para la caché (funciona en cualquier servidor)
       - huggingface_cache:/root/.cache/huggingface
-      # Mapeamos el script
       - ./inference_app.py:/app/inference_app.py
-      # Mapeamos los datos guardados
       - ./saves:/app/LLaMA-Factory/saves
+      # --- NUEVA LÍNEA: Mapear el JSON ---
+      - ./data.json:/app/data.json
     environment:
       - CUDA_VISIBLE_DEVICES=-1
       - OMP_NUM_THREADS=6
     command: sh -c "pip install gradio && python /app/inference_app.py"
 
-# CORRECCIÓN 1 (Continuación): Definimos el volumen
 volumes:
   huggingface_cache:
