@@ -1,47 +1,68 @@
 
 import gradio as gr
 import torch
+import json
+import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import PeftModel, PeftConfig
+from peft import PeftModel
 
 # --- CONFIGURACIÓN ---
-# La ruta donde guardaste tu modelo al exportar en LLaMA-Factory
-# Si solo guardaste adaptadores, apunta a la carpeta del checkpoint (ej. saves/Qwen.../lora/checkpoint-100)
-ADAPTER_PATH = "/app/LLaMA-Factory/saves/tu_modelo_entrenado" 
-BASE_MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct" # Debe ser el mismo que usaste para entrenar
+ADAPTER_PATH = "/app/LLaMA-Factory/saves/tu_modelo_entrenado"
+BASE_MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"
+JSON_PATH = "/app/data.json"  # Ruta donde montaremos el JSON en Docker
 
-print("⏳ Cargando modelo en CPU... paciencia...")
+print("⏳ Cargando modelo y datos...")
 
-# 1. Cargar Tokenizer
+# 1. Cargar el JSON de contexto
+try:
+    with open(JSON_PATH, "r", encoding="utf-8") as f:
+        json_data = json.load(f)
+        json_str = json.dumps(json_data, indent=2, ensure_ascii=False)
+        print("✅ JSON cargado correctamente.")
+except Exception as e:
+    print(f"⚠️ Error cargando JSON: {e}")
+    json_str = "{}"
+
+# 2. Definir el System Prompt (La "Personalidad" y el Contexto)
+SYSTEM_PROMPT = f"""
+Eres un asistente de atención al cliente útil y amable.
+Tu objetivo es responder preguntas basándote ESTRICTAMENTE en la siguiente información en formato JSON.
+Si la respuesta no está en el JSON, di amablemente que no tienes esa información.
+
+INFORMACIÓN DE CONTEXTO:
+{json_str}
+"""
+
+# 3. Cargar Tokenizer y Modelo
 tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID)
-
-# 2. Cargar Modelo Base
 model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL_ID,
-    torch_dtype=torch.float32, # CPU prefiere float32
+    dtype=torch.float32,
     device_map="cpu",
     low_cpu_mem_usage=True
 )
 
-# 3. Cargar tus cambios entrenados (Si existen)
 try:
     model = PeftModel.from_pretrained(model, ADAPTER_PATH)
-    print("✅ Adaptadores LoRA cargados correctamente.")
-except Exception as e:
-    print(f"ℹ️ No se encontraron adaptadores o ruta incorrecta, usando modelo base. Error: {e}")
+    print("✅ Adaptadores LoRA cargados.")
+except:
+    print("ℹ️ Usando modelo base sin adaptadores.")
 
-model.eval() # Modo evaluación
+model.eval()
 
 # --- LÓGICA DEL CHAT ---
 def generate_response(message, history):
-    # Formatear el prompt como chat (User/Assistant)
-    messages = []
-    for user_msg, bot_msg in history:
-        messages.append({"role": "user", "content": user_msg})
-        messages.append({"role": "assistant", "content": bot_msg})
+    # 1. Construir la lista de mensajes
+    # IMPORTANTE: El mensaje del sistema va PRIMERO
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    
+    # 2. Añadir historia del chat (Gradio ahora usa formato lista de dicts con type="messages")
+    messages.extend(history)
+    
+    # 3. Añadir el mensaje actual del usuario
     messages.append({"role": "user", "content": message})
 
-    # Aplicar la plantilla de chat del modelo (importante para que entienda instrucciones)
+    # 4. Aplicar plantilla de chat
     text = tokenizer.apply_chat_template(
         messages,
         tokenize=False,
@@ -50,16 +71,16 @@ def generate_response(message, history):
 
     inputs = tokenizer([text], return_tensors="pt").to("cpu")
 
-    # Generar respuesta
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=128, # Pocos tokens para que sea rápido en CPU
-            temperature=0.7,
-            do_sample=True
+            max_new_tokens=256, # Un poco más de espacio para responder
+            temperature=0.5,    # Más bajo para que sea más fiel al JSON (menos alucinación)
+            do_sample=True,
+            top_p=0.9
         )
 
-    # Decodificar solo la parte nueva
+    # Decodificar solo la respuesta nueva
     generated_ids = [
         output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs.input_ids, outputs)
     ]
@@ -69,9 +90,9 @@ def generate_response(message, history):
 # --- INTERFAZ GRADIO ---
 demo = gr.ChatInterface(
     fn=generate_response,
-    title="🤖 Mi LLM Local (CPU)",
-    description="Probando el modelo Qwen entrenado localmente.",
-    examples=["¿Qué es Docker?", "Explícame la relatividad de forma simple."],
+    type="messages",  # Formato moderno de Gradio
+    title="🤖 Asistente con Contexto JSON",
+    description=f"Este asistente responde preguntas sobre: {json_str[:100]}...",
 )
 
 if __name__ == "__main__":
