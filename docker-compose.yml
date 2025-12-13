@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  inference-ui:
+  inference-api:
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,14 +10,18 @@ services:
       - "7861:7861"
     volumes:
       - huggingface_cache:/root/.cache/huggingface
-      # Mapeamos el nuevo script
       - ./api_app.py:/app/api_app.py
       - ./saves:/app/LLaMA-Factory/saves
     environment:
       - CUDA_VISIBLE_DEVICES=-1
       - OMP_NUM_THREADS=4
-    # Instalamos dependencias extras y corremos el script
-    command: sh -c "pip install fastapi uvicorn gradio && python /app/api_app.py"
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+    # --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
+    # Agregamos "sentence-transformers scikit-learn"
+    command: sh -c "pip install fastapi uvicorn gradio sentence-transformers scikit-learn && python /app/api_app.py"
 
 volumes:
   huggingface_cache:
