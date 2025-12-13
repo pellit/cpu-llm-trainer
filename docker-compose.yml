@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  inference-api:
+  inference-ui:
     build:
       context: .
       dockerfile: Dockerfile
