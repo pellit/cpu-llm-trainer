@@ -1,0 +1,9 @@
+fastapi
+gradio
+numpy
+peft
+pydantic
+scikit-learn
+sentence-transformers
+transformers
+uvicorn

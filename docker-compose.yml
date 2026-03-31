@@ -14,14 +14,9 @@ services:
     environment:
       - CUDA_VISIBLE_DEVICES=-1
       - OMP_NUM_THREADS=4
-      - API_KEY=super-secreto-2025  # <--- CAMBIA ESTO
-    deploy:
-      resources:
-        limits:
-          memory: 12G
-    # --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
-    # Agregamos "sentence-transformers scikit-learn"
-    command: sh -c "pip install fastapi uvicorn gradio sentence-transformers scikit-learn && python /app/api_app.py"
+      - API_KEY=super-secreto-2025
+    mem_limit: 12g
+    command: python /app/api_app.py
 
 volumes:
   huggingface_cache:

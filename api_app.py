@@ -5,7 +5,7 @@ import numpy as np
 import os
 from fastapi import FastAPI, HTTPException, Security, status
 from fastapi.security import APIKeyHeader
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
@@ -32,7 +32,7 @@ print("⏳ Iniciando carga de modelos en CPU...")
 tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID)
 model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL_ID,
-    dtype=torch.bfloat16, 
+    dtype=torch.float32,
     device_map="cpu",
     low_cpu_mem_usage=True
 )
@@ -92,7 +92,31 @@ class RAGEngine:
 rag = RAGEngine()
 
 # --- 3. LÓGICA DE GENERACIÓN ---
-def core_generate(message: str, role_instruction: str, context_json: Dict, history: list = []):
+def normalize_history(history: Optional[list]) -> List[Dict[str, str]]:
+    if not history:
+        return []
+
+    normalized: List[Dict[str, str]] = []
+
+    for entry in history:
+        if isinstance(entry, dict):
+            role = entry.get("role")
+            content = entry.get("content")
+            if role in {"user", "assistant", "system"} and isinstance(content, str):
+                normalized.append({"role": role, "content": content})
+            continue
+
+        if isinstance(entry, (list, tuple)) and len(entry) == 2:
+            user_msg, assistant_msg = entry
+            if isinstance(user_msg, str):
+                normalized.append({"role": "user", "content": user_msg})
+            if isinstance(assistant_msg, str):
+                normalized.append({"role": "assistant", "content": assistant_msg})
+
+    return normalized[-4:]
+
+
+def core_generate(message: str, role_instruction: str, context_json: Dict, history: Optional[list] = None):
     rag.ingest_json(context_json)
     relevant_context = rag.retrieve(message, top_k=7)
     
@@ -110,13 +134,7 @@ def core_generate(message: str, role_instruction: str, context_json: Dict, histo
     """
     
     messages = [{"role": "system", "content": full_system_prompt}]
-    
-    if history:
-        if isinstance(history[0], list): 
-            messages.extend([{"role": "user", "content": u}, {"role": "assistant", "content": b}] for u,b in history[-2:])
-        elif isinstance(history[0], dict):
-            messages.extend(history[-4:])
-        
+    messages.extend(normalize_history(history))
     messages.append({"role": "user", "content": message})
 
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -153,8 +171,8 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
 class ChatRequest(BaseModel):
     message: str
     role: str = "Eres un asistente útil."
-    data: Dict[str, Any] = {}
-    history: List[Dict[str, str]] = []
+    data: Dict[str, Any] = Field(default_factory=dict)
+    history: List[Dict[str, str]] = Field(default_factory=list)
 
 @app.post("/v1/chat")
 # Inyectamos la seguridad aquí:

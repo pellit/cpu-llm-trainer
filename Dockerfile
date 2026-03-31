@@ -1,29 +1,30 @@
-# Usamos Python ligero
 FROM python:3.10-slim
 
 WORKDIR /app
 
-# Instalar dependencias del sistema básicas (git y compiladores C++)
-RUN apt-get update && apt-get install -y \
-    git \
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    CUDA_VISIBLE_DEVICES=-1 \
+    OMP_NUM_THREADS=4
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# 1. Instalar PyTorch versión CPU (Esto ahorra ~3GB de espacio y evita errores de CUDA)
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+COPY requirements.txt /app/requirements.txt
 
-# 2. Clonar LLaMA-Factory
-RUN git clone https://github.com/hiyouga/LLaMA-Factory.git
+RUN python -m pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch \
+    && pip install --no-cache-dir -r /app/requirements.txt
 
-WORKDIR /app/LLaMA-Factory
+RUN mkdir -p /app/LLaMA-Factory/saves/tu_modelo_entrenado
 
-# 3. Instalar dependencias de LLaMA-Factory
-# "metrics" añade soporte para evaluar, pero mantenemos el resto mínimo
-RUN pip install -e .[metrics]
+COPY api_app.py /app/api_app.py
+COPY inference_app.py /app/inference_app.py
 
-# Variable para evitar que busque GPU
-ENV CUDA_VISIBLE_DEVICES=-1
-ENV OMP_NUM_THREADS=8 
+EXPOSE 7861
 
-# Comando de inicio
-CMD ["llamafactory-cli", "webui"]
+CMD ["python", "/app/api_app.py"]
