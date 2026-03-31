@@ -113,7 +113,7 @@ Ahora, si intentas usar el comando de antes, te dará error 403 Forbidden. Debes
 
 import requests
 
-API_URL = "http://localhost:7861/v1/chat"
+API_URL = "http://38.51.69.71:7861/v1/chat"
 MY_KEY = "super-secreto-2025"  # La misma que pusiste en docker-compose
 
 payload = {
@@ -138,7 +138,97 @@ except Exception as e:
 ### 6.1.2 Ejemplo con cURL
 #Bash
 
-curl -X POST "http://localhost:7861/v1/chat" \
+curl -X POST "http://38.51.69.71:7861/v1/chat" \
      -H "Content-Type: application/json" \
      -H "X-API-Key: super-secreto-2025" \
      -d '{"message": "Hola", "data": {}}'
+
+-----
+
+### 7\. Credenciales y ejemplos de ambos casos
+
+Si tienes las dos APIs levantadas, estas son las credenciales:
+
+| API | URL Base | Endpoint | API Key |
+| :--- | :--- | :--- | :--- |
+| Qwen | `http://38.51.69.71:7861` | `/v1/chat` | `super-secreto-2025` |
+| Gemma 2 | `http://38.51.69.71:7862` | `/v1/chat` | `super-secreto-gemma2-2026` |
+
+#### 7.1 cURL para Qwen
+
+```bash
+curl -X POST "http://38.51.69.71:7861/v1/chat" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: super-secreto-2025" \
+     -d '{
+           "message": "Resume el JSON",
+           "role": "Eres un asistente útil.",
+           "data": {
+             "empresa": "TechSolutions",
+             "estado": "activo"
+           },
+           "history": []
+         }'
+```
+
+#### 7.2 cURL para Gemma 2
+
+```bash
+curl -X POST "http://38.51.69.71:7862/v1/chat" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: super-secreto-gemma2-2026" \
+     -d '{
+           "message": "¿Qué productos tienen stock?",
+           "role": "Eres un asistente de ventas.",
+           "data": {
+             "productos": [
+               {"nombre": "Laptop Pro", "stock": 5},
+               {"nombre": "Mouse Gamer", "stock": 0}
+             ]
+           },
+           "history": []
+         }'
+```
+
+#### 7.3 Python reutilizable para cualquiera de las dos
+
+```python
+import requests
+
+def consultar_api(api_url, api_key, message, data):
+    headers = {
+        "Content-Type": "application/json",
+        "X-API-Key": api_key,
+    }
+    payload = {
+        "message": message,
+        "role": "Eres un asistente útil.",
+        "data": data,
+        "history": [],
+    }
+    response = requests.post(api_url, json=payload, headers=headers, timeout=120)
+    response.raise_for_status()
+    return response.json()
+
+respuesta_qwen = consultar_api(
+    "http://38.51.69.71:7861/v1/chat",
+    "super-secreto-2025",
+    "Resume el JSON",
+    {"empresa": "TechSolutions"}
+)
+
+respuesta_gemma2 = consultar_api(
+    "http://38.51.69.71:7862/v1/chat",
+    "super-secreto-gemma2-2026",
+    "¿Qué producto tiene stock?",
+    {"productos": [{"nombre": "Laptop Pro", "stock": 5}]}
+)
+
+print(respuesta_qwen)
+print(respuesta_gemma2)
+```
+
+#### 7.4 Swagger UI
+
+  * Qwen: `http://38.51.69.71:7861/docs`
+  * Gemma 2: `http://38.51.69.71:7862/docs`
