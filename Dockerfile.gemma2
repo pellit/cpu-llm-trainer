@@ -11,7 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     BASE_MODEL_ID=google/gemma-2-2b-it \
     EMBEDDING_MODEL_ID=all-MiniLM-L6-v2 \
     ADAPTER_PATH=/app/LLaMA-Factory/saves/tu_modelo_entrenado_gemma2 \
-    APP_TITLE=Gemma2 RAG API Segura \
+    APP_TITLE="Gemma2 RAG API Segura" \
     APP_PORT=7862
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
