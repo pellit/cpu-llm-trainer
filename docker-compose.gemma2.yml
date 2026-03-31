@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  inference-api-gemma2:
+    build:
+      context: .
+      dockerfile: Dockerfile.gemma2
+    ports:
+      - "7862:7862"
+    volumes:
+      - huggingface_cache_gemma2:/root/.cache/huggingface
+      - ./api_app.py:/app/api_app.py
+      - ./saves-gemma2:/app/LLaMA-Factory/saves
+    environment:
+      - CUDA_VISIBLE_DEVICES=-1
+      - OMP_NUM_THREADS=4
+      - API_KEY=super-secreto-gemma2-2026
+      - BASE_MODEL_ID=google/gemma-2-2b-it
+      - EMBEDDING_MODEL_ID=all-MiniLM-L6-v2
+      - ADAPTER_PATH=/app/LLaMA-Factory/saves/tu_modelo_entrenado_gemma2
+      - APP_TITLE=Gemma2 RAG API Segura
+      - APP_PORT=7862
+    mem_limit: 12g
+    command: python /app/api_app.py
+
+volumes:
+  huggingface_cache_gemma2:

@@ -16,9 +16,11 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 # --- 1. CONFIGURACIÓN ---
-ADAPTER_PATH = "/app/LLaMA-Factory/saves/tu_modelo_entrenado"
-BASE_MODEL_ID = "Qwen/Qwen2.5-0.5B-Instruct"
-EMBEDDING_MODEL_ID = "all-MiniLM-L6-v2"
+ADAPTER_PATH = os.getenv("ADAPTER_PATH", "/app/LLaMA-Factory/saves/tu_modelo_entrenado")
+BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "Qwen/Qwen2.5-0.5B-Instruct")
+EMBEDDING_MODEL_ID = os.getenv("EMBEDDING_MODEL_ID", "all-MiniLM-L6-v2")
+APP_TITLE = os.getenv("APP_TITLE", "LLM RAG API Segura")
+APP_PORT = int(os.getenv("APP_PORT", "7861"))
 
 # --- SEGURIDAD: Obtener clave del entorno (o usar una por defecto insegura) ---
 API_KEY = os.getenv("API_KEY", "clave-segura-123")
@@ -157,7 +159,7 @@ def core_generate(message: str, role_instruction: str, context_json: Dict, histo
     return response
 
 # --- 4. API SEGURA (FastAPI) ---
-app = FastAPI(title="LLM RAG API Segura")
+app = FastAPI(title=APP_TITLE)
 
 # Función de dependencia para validar la clave
 async def get_api_key(api_key_header: str = Security(api_key_header)):
@@ -194,7 +196,7 @@ def gradio_wrapper(message, history, role_input, json_text, json_file):
         return "❌ JSON Inválido"
     return core_generate(message, role_input, final_json, history)
 
-with gr.Blocks(theme=gr.themes.Soft()) as ui:
+with gr.Blocks() as ui:
     gr.Markdown("# 🔐 Chat RAG Seguro")
     with gr.Row():
         with gr.Column(scale=1):
@@ -203,11 +205,11 @@ with gr.Blocks(theme=gr.themes.Soft()) as ui:
                 with gr.TabItem("📁 Archivo"): file_box = gr.File(label="JSON", file_types=[".json"], type="filepath")
                 with gr.TabItem("📝 Texto"): json_box = gr.Code(label="JSON", language="json", value='{}')
         with gr.Column(scale=2):
-            gr.ChatInterface(fn=gradio_wrapper, additional_inputs=[role_box, json_box, file_box], type="messages")
+            gr.ChatInterface(fn=gradio_wrapper, additional_inputs=[role_box, json_box, file_box])
 
 # Opcional: Proteger también la UI con usuario/pass
 # app = gr.mount_gradio_app(app, ui, path="/ui", auth=("admin", "admin123"))
 app = gr.mount_gradio_app(app, ui, path="/ui")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=7861)
+    uvicorn.run(app, host="0.0.0.0", port=APP_PORT)

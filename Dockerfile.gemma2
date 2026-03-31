@@ -1,0 +1,35 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    CUDA_VISIBLE_DEVICES=-1 \
+    OMP_NUM_THREADS=4 \
+    BASE_MODEL_ID=google/gemma-2-2b-it \
+    EMBEDDING_MODEL_ID=all-MiniLM-L6-v2 \
+    ADAPTER_PATH=/app/LLaMA-Factory/saves/tu_modelo_entrenado_gemma2 \
+    APP_TITLE=Gemma2 RAG API Segura \
+    APP_PORT=7862
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /app/requirements.txt
+
+RUN python -m pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch \
+    && pip install --no-cache-dir -r /app/requirements.txt
+
+RUN mkdir -p /app/LLaMA-Factory/saves/tu_modelo_entrenado_gemma2
+
+COPY api_app.py /app/api_app.py
+COPY inference_app.py /app/inference_app.py
+
+EXPOSE 7862
+
+CMD ["python", "/app/api_app.py"]
