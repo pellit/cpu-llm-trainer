@@ -18,7 +18,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 # --- 1. CONFIGURACIÓN ---
 ADAPTER_PATH = os.getenv("ADAPTER_PATH", "/app/LLaMA-Factory/saves/tu_modelo_entrenado")
 BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "Qwen/Qwen2.5-0.5B-Instruct")
+BASE_MODEL_PATH = os.getenv("BASE_MODEL_PATH", "")
 EMBEDDING_MODEL_ID = os.getenv("EMBEDDING_MODEL_ID", "all-MiniLM-L6-v2")
+EMBEDDING_MODEL_PATH = os.getenv("EMBEDDING_MODEL_PATH", "")
 APP_TITLE = os.getenv("APP_TITLE", "LLM RAG API Segura")
 APP_PORT = int(os.getenv("APP_PORT", "7861"))
 HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
@@ -36,12 +38,23 @@ def hf_auth_kwargs() -> Dict[str, str]:
     return {"token": HF_TOKEN} if HF_TOKEN else {}
 
 
+def resolve_model_source(local_path: str, model_id: str, label: str):
+    if local_path and os.path.isdir(local_path):
+        print(f"Usando {label} local desde: {local_path}")
+        return local_path, {}
+
+    if local_path:
+        print(f"No se encontro {label} local en {local_path}. Se intentara descargar '{model_id}'.")
+
+    return model_id, hf_auth_kwargs()
+
+
 def load_base_model():
-    auth_kwargs = hf_auth_kwargs()
+    model_source, auth_kwargs = resolve_model_source(BASE_MODEL_PATH, BASE_MODEL_ID, "modelo base")
     try:
-        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID, **auth_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(model_source, **auth_kwargs)
         model = AutoModelForCausalLM.from_pretrained(
-            BASE_MODEL_ID,
+            model_source,
             dtype=torch.float32,
             device_map="cpu",
             low_cpu_mem_usage=True,
@@ -75,7 +88,12 @@ model.eval()
 
 # Cargar Embedder
 print("⏳ Cargando motor de búsqueda...")
-embedder = SentenceTransformer(EMBEDDING_MODEL_ID, device="cpu", **hf_auth_kwargs())
+embedding_source, embedding_auth_kwargs = resolve_model_source(
+    EMBEDDING_MODEL_PATH,
+    EMBEDDING_MODEL_ID,
+    "modelo de embeddings"
+)
+embedder = SentenceTransformer(embedding_source, device="cpu", **embedding_auth_kwargs)
 print("✅ Motor de búsqueda listo.")
 
 # --- 2. MOTOR RAG ---

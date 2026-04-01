@@ -164,6 +164,28 @@ export HF_TOKEN=tu_token_de_hugging_face
 
 Ese token debe pertenecer a una cuenta con acceso aprobado al repositorio `google/gemma-2-2b-it`. Si no lo haces, la API fallarÃ¡ al iniciar al descargar `config.json`.
 
+#### 7.0.1 Descargar Gemma 2 a disco local y reutilizarla
+
+La API de Gemma 2 ahora prioriza el uso de modelos locales montados en `./models`. Descarga una vez y luego el contenedor cargarÃƒÆ’Ã‚Â¡ desde disco:
+
+```powershell
+$env:HF_TOKEN = "hf_tu_token"
+docker compose -f docker-compose.gemma2.yml run --rm inference-api-gemma2 python /app/download_models.py
+```
+
+Eso descarga:
+
+- `google/gemma-2-2b-it` en `./models/gemma-2-2b-it`
+- `all-MiniLM-L6-v2` en `./models/all-MiniLM-L6-v2`
+
+Luego puedes iniciar la API normal:
+
+```powershell
+docker compose -f docker-compose.gemma2.yml up --build
+```
+
+Si `./models/gemma-2-2b-it` existe, la API usarÃƒÆ’Ã‚Â¡ esa copia local antes de intentar ir a Hugging Face.
+
 #### 7.1 cURL para Qwen
 
 ```bash

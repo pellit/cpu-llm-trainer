@@ -8,6 +8,8 @@ services:
     volumes:
       - huggingface_cache_gemma2:/root/.cache/huggingface
       - ./api_app.py:/app/api_app.py
+      - ./download_models.py:/app/download_models.py
+      - ./models:/app/models
       - ./saves-gemma2:/app/LLaMA-Factory/saves
     environment:
       - CUDA_VISIBLE_DEVICES=-1
@@ -15,7 +17,9 @@ services:
       - HF_TOKEN=${HF_TOKEN}
       - API_KEY=super-secreto-gemma2-2026
       - BASE_MODEL_ID=google/gemma-2-2b-it
-      - EMBEDDING_MODEL_ID=all-MiniLM-L6-v2
+      - BASE_MODEL_PATH=/app/models/gemma-2-2b-it
+      - EMBEDDING_MODEL_ID=sentence-transformers/all-MiniLM-L6-v2
+      - EMBEDDING_MODEL_PATH=/app/models/all-MiniLM-L6-v2
       - ADAPTER_PATH=/app/LLaMA-Factory/saves/tu_modelo_entrenado_gemma2
       - "APP_TITLE=Gemma2 RAG API Segura"
       - APP_PORT=7862
