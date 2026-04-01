@@ -242,3 +242,6 @@ print(respuesta_gemma2)
 
   * Qwen: `http://38.51.69.71:7861/docs`
   * Gemma 2: `http://38.51.69.71:7862/docs`
+
+
+https://huggingface.co/google/gemma-2-2b-it
