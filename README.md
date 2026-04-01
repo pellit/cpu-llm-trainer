@@ -154,6 +154,16 @@ Si tienes las dos APIs levantadas, estas son las credenciales:
 | Qwen | `http://38.51.69.71:7861` | `/v1/chat` | `super-secreto-2025` |
 | Gemma 2 | `http://38.51.69.71:7862` | `/v1/chat` | `super-secreto-gemma2-2026` |
 
+#### 7.0 Requisito extra para Gemma 2
+
+El modelo `google/gemma-2-2b-it` es un repositorio restringido en Hugging Face. Antes de levantar `docker-compose.gemma2.yml` debes:
+
+```bash
+export HF_TOKEN=tu_token_de_hugging_face
+```
+
+Ese token debe pertenecer a una cuenta con acceso aprobado al repositorio `google/gemma-2-2b-it`. Si no lo haces, la API fallarÃ¡ al iniciar al descargar `config.json`.
+
 #### 7.1 cURL para Qwen
 
 ```bash

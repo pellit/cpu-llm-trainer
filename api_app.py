@@ -21,6 +21,7 @@ BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "Qwen/Qwen2.5-0.5B-Instruct")
 EMBEDDING_MODEL_ID = os.getenv("EMBEDDING_MODEL_ID", "all-MiniLM-L6-v2")
 APP_TITLE = os.getenv("APP_TITLE", "LLM RAG API Segura")
 APP_PORT = int(os.getenv("APP_PORT", "7861"))
+HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
 
 # --- SEGURIDAD: Obtener clave del entorno (o usar una por defecto insegura) ---
 API_KEY = os.getenv("API_KEY", "clave-segura-123")
@@ -31,13 +32,40 @@ print(f"🔒 API Key configurada. Header requerido: {API_KEY_NAME}")
 print("⏳ Iniciando carga de modelos en CPU...")
 
 # Cargar LLM
-tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID)
-model = AutoModelForCausalLM.from_pretrained(
-    BASE_MODEL_ID,
-    dtype=torch.float32,
-    device_map="cpu",
-    low_cpu_mem_usage=True
-)
+def hf_auth_kwargs() -> Dict[str, str]:
+    return {"token": HF_TOKEN} if HF_TOKEN else {}
+
+
+def load_base_model():
+    auth_kwargs = hf_auth_kwargs()
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID, **auth_kwargs)
+        model = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL_ID,
+            dtype=torch.float32,
+            device_map="cpu",
+            low_cpu_mem_usage=True,
+            **auth_kwargs
+        )
+        return tokenizer, model
+    except OSError as exc:
+        error_msg = str(exc).lower()
+        if "gated repo" in error_msg or "access to model" in error_msg:
+            if HF_TOKEN:
+                hint = (
+                    f"El token configurado en HF_TOKEN no tiene acceso al modelo '{BASE_MODEL_ID}'. "
+                    "Acepta el acceso al repositorio en Hugging Face y vuelve a iniciar."
+                )
+            else:
+                hint = (
+                    f"El modelo '{BASE_MODEL_ID}' requiere autenticacion en Hugging Face. "
+                    "Configura la variable HF_TOKEN con un token que tenga acceso al repositorio."
+                )
+            raise RuntimeError(hint) from exc
+        raise
+
+
+tokenizer, model = load_base_model()
 try:
     model = PeftModel.from_pretrained(model, ADAPTER_PATH)
     print("✅ LLM cargado.")
@@ -47,7 +75,7 @@ model.eval()
 
 # Cargar Embedder
 print("⏳ Cargando motor de búsqueda...")
-embedder = SentenceTransformer(EMBEDDING_MODEL_ID, device="cpu")
+embedder = SentenceTransformer(EMBEDDING_MODEL_ID, device="cpu", **hf_auth_kwargs())
 print("✅ Motor de búsqueda listo.")
 
 # --- 2. MOTOR RAG ---

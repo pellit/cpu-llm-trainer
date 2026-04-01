@@ -12,6 +12,7 @@ services:
     environment:
       - CUDA_VISIBLE_DEVICES=-1
       - OMP_NUM_THREADS=4
+      - HF_TOKEN=${HF_TOKEN}
       - API_KEY=super-secreto-gemma2-2026
       - BASE_MODEL_ID=google/gemma-2-2b-it
       - EMBEDDING_MODEL_ID=all-MiniLM-L6-v2
