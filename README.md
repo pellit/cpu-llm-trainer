@@ -170,13 +170,15 @@ La API de Gemma 2 ahora prioriza el uso de modelos locales montados en `./models
 
 ```powershell
 $env:HF_TOKEN = "hf_tu_token"
-docker compose -f docker-compose.gemma2.yml run --rm inference-api-gemma2 python /app/download_models.py
+docker compose -f docker-compose.gemma2.yml run --rm gemma2-downloader
 ```
 
 Eso descarga:
 
-- `google/gemma-2-2b-it` en `./models/gemma-2-2b-it`
-- `all-MiniLM-L6-v2` en `./models/all-MiniLM-L6-v2`
+- `google/gemma-2-2b-it` en `/app/models/gemma-2-2b-it`
+- `all-MiniLM-L6-v2` en `/app/models/all-MiniLM-L6-v2`
+
+Gemma 2 usa ahora un volumen nombrado de Docker (`gemma2_models`) compartido entre `gemma2-downloader` y `inference-api-gemma2`, para no depender de mounts locales del host.
 
 Luego puedes iniciar la API normal:
 

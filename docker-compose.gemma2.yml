@@ -9,7 +9,7 @@ services:
       - huggingface_cache_gemma2:/root/.cache/huggingface
       - ./api_app.py:/app/api_app.py
       - ./download_models.py:/app/download_models.py
-      - ./models:/app/models
+      - gemma2_models:/app/models
       - ./saves-gemma2:/app/LLaMA-Factory/saves
     environment:
       - CUDA_VISIBLE_DEVICES=-1
@@ -29,5 +29,25 @@ services:
     mem_limit: 12g
     command: python /app/api_app.py
 
+  gemma2-downloader:
+    build:
+      context: .
+      dockerfile: Dockerfile.gemma2
+    volumes:
+      - huggingface_cache_gemma2:/root/.cache/huggingface
+      - ./download_models.py:/app/download_models.py
+      - gemma2_models:/app/models
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - LOCAL_MODELS_ONLY=0
+      - HF_HUB_OFFLINE=0
+      - TRANSFORMERS_OFFLINE=0
+      - BASE_MODEL_ID=google/gemma-2-2b-it
+      - BASE_MODEL_PATH=/app/models/gemma-2-2b-it
+      - EMBEDDING_MODEL_ID=sentence-transformers/all-MiniLM-L6-v2
+      - EMBEDDING_MODEL_PATH=/app/models/all-MiniLM-L6-v2
+    command: python /app/download_models.py
+
 volumes:
   huggingface_cache_gemma2:
+  gemma2_models:

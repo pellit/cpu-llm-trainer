@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 
-from huggingface_hub import snapshot_download
-
 
 BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "google/gemma-2-2b-it")
 EMBEDDING_MODEL_ID = os.getenv("EMBEDDING_MODEL_ID", "sentence-transformers/all-MiniLM-L6-v2")
@@ -18,6 +16,8 @@ def ensure_online_download_mode():
 
 
 def download_repo(repo_id: str, target_dir: str):
+    from huggingface_hub import snapshot_download
+
     Path(target_dir).mkdir(parents=True, exist_ok=True)
     print(f"Descargando {repo_id} en {target_dir} ...")
     snapshot_download(
