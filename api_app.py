@@ -24,6 +24,7 @@ EMBEDDING_MODEL_PATH = os.getenv("EMBEDDING_MODEL_PATH", "")
 APP_TITLE = os.getenv("APP_TITLE", "LLM RAG API Segura")
 APP_PORT = int(os.getenv("APP_PORT", "7861"))
 HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HUGGING_FACE_HUB_TOKEN")
+LOCAL_MODELS_ONLY = os.getenv("LOCAL_MODELS_ONLY", "0").strip().lower() in {"1", "true", "yes", "on"}
 
 # --- SEGURIDAD: Obtener clave del entorno (o usar una por defecto insegura) ---
 API_KEY = os.getenv("API_KEY", "clave-segura-123")
@@ -44,6 +45,11 @@ def resolve_model_source(local_path: str, model_id: str, label: str):
         return local_path, {}
 
     if local_path:
+        if LOCAL_MODELS_ONLY:
+            raise RuntimeError(
+                f"Falta el {label} local en '{local_path}'. "
+                "Descargalo antes con python /app/download_models.py."
+            )
         print(f"No se encontro {label} local en {local_path}. Se intentara descargar '{model_id}'.")
 
     return model_id, hf_auth_kwargs()

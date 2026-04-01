@@ -15,6 +15,9 @@ services:
       - CUDA_VISIBLE_DEVICES=-1
       - OMP_NUM_THREADS=4
       - HF_TOKEN=${HF_TOKEN}
+      - LOCAL_MODELS_ONLY=1
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
       - API_KEY=super-secreto-gemma2-2026
       - BASE_MODEL_ID=google/gemma-2-2b-it
       - BASE_MODEL_PATH=/app/models/gemma-2-2b-it

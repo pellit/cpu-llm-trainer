@@ -186,6 +186,8 @@ docker compose -f docker-compose.gemma2.yml up --build
 
 Si `./models/gemma-2-2b-it` existe, la API usarÃƒÆ’Ã‚Â¡ esa copia local antes de intentar ir a Hugging Face.
 
+El compose de Gemma 2 ahora corre en modo offline estricto (`LOCAL_MODELS_ONLY=1`). Si falta `./models`, el arranque fallarÃƒÆ’Ã‚Â¡ inmediatamente en vez de intentar descargar desde Internet.
+
 #### 7.1 cURL para Qwen
 
 ```bash
